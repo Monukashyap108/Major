@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+
+
+@theme{
+    --color-primary:#000000
+    --color-primary:#000000
+    --color-heading:#000000
+    --color-paragraph:#000000
+    --text-white:#e8d5a3
+    
+
+}
+@font-face {
+    font-family: 'Frukturn';
+    src: url(".../src/assests/fonts/Fruktur-Regular.ttf ");
+}
+
+@theme{
+    --font-frukturn: 'Frukturn',serif;
+    --font-cinzel: 'Cinzel',serif;
+    
+}
