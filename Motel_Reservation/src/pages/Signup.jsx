@@ -1,21 +1,42 @@
 import React ,{useState} from "react";
 import { Link } from "react-router-dom";
+import {AppContext} from "../content/AppContext.jsx";
+import { useContext } from "react";
+ 
+import toast from  "react-hot-toast";
 export default function Signup() {
-    const [formdata , setFormData] = useState({
+    const [formdata , setFormdata] = useState({
     name:"",
     email:"",
-    password:""
+    password:"",
+    role:"",
   })  
+const {navigate, axios} = useContext(AppContext);
  const onChangeHandler = (e) =>{
-  setFormData({
+  setFormdata({
     ...formdata,
     [e.target.name]: e.target.value
   })
  }
   const submitHandler = async(e) =>{
     e.preventDefault();
-    console.log(formdata);
-   
+    // console.log(formdata);
+     try{
+        const {data} = await  axios.post("/api/user/signup", formdata );
+        console.log(data)
+        if(data.success){
+          toast.success(data.message)
+          navigate("/login")
+        }
+        else{
+          toast.error(data.message)
+             
+        }
+     }
+     catch(error){
+   toast.error(error?.response?.data?.message || "Something went wrong");
+       
+     }
   }
   return (
     <div
@@ -100,6 +121,32 @@ export default function Signup() {
           />
         </div>
 
+        {/* Role Field */}
+        <div className="w-full">
+          <p
+            className="text-xs uppercase tracking-widest mb-1"
+            style={{ color: "#6b5a3e" }}
+          >
+            Role
+          </p>
+          <select
+            onChange={onChangeHandler}
+            name = "role" 
+            value={formdata.role}
+            className="w-full p-2 rounded mt-1 text-sm outline-none transition-all"
+            style={{
+              border: "1.5px solid #c8bfb0",
+              background: "#faf8f5",
+              color: "#1a1209",
+            }}
+            required
+          >
+            <option value="">Select Role</option>
+            <option value="user">User</option>
+            <option value="owner">Owner</option>
+          </select>
+        </div>
+
         {/* Password Field */}
         <div className="w-full">
           <p
@@ -142,6 +189,7 @@ export default function Signup() {
 
         {/* Submit Button */}
         <button
+        type="submit"
           className="w-full py-2 rounded-sm text-white text-xs uppercase tracking-widest transition-all cursor-pointer"
           style={{ background: "#b8943f", letterSpacing: "0.15em" }}
  

@@ -28,15 +28,33 @@ import { CheckCircle } from "lucide-react";
 import { XCircle } from "lucide-react";
 
 export default function SingleRoom() {
-  const { roomData } = useContext(AppContext);
+  const { roomData, axios, navigate } = useContext(AppContext);
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [bookingData, setBookingData] = useState({
+    checkIn: "",
+    checkOut: "",
+    persons: 1,
+  });
   const { id } = useParams();
   const room = roomData.find((r) => r._id === id);
   if (!room) return <div>Room not found</div>;
 
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [persons, setPersons] = useState(1);
+  // const onChangeHandler = (e) => {
+  //   setBookingData({
+  //     ...bookingData,
+  //     [e.target.name]: e.target.value,
+  //   });
+  const onChangeHandler = (e) => {
+  const { name, value } = e.target;
+
+  setBookingData({
+    ...bookingData,
+    [name]: name === "persons" ? Number(value) : value,
+  });
+ 
+};
+ 
   const getAmenityIcon = (amenity) => {
     const iconMap = {
       "Ocean View ": Eye,
@@ -66,14 +84,61 @@ export default function SingleRoom() {
     };
     return iconMap[amenity] || CheckCircle;
   };
-  const handleBooking = (e)=>{
-     if(!checkIn || !checkOut || !persons){
-       toast.error("Please fill all the fields");
-       return;
-     }
-     toast.success("Booking successful");
-     navigate("/my-bookings");
+
+  const checkRoomAvailability = async () => {
+  
+    try {
+          
+      if (bookingData.checkIn>= bookingData.checkOut) {
+        toast.error("Check in date must be before check out date");
+        return;
+      }
+      const { data } = await axios.post("/api/bookings/check-availability", {
+        room: room._id,
+        checkInDate: bookingData.checkIn,
+        checkOutDate: bookingData.checkOut,
+      });
+      if (data.success) {
+         if(data.isAvailable){
+          setIsAvailable(true);
+        toast.success("Room is Available");
+         }else {
+        setIsAvailable(false);
+        toast.error("Room is not Available");
+      }
+      } 
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    }
   };
+  const onSubmitHandler = async (e) => {
+    e.preventDefault();
+    try {
+      if (!isAvailable) {
+        // toast.error("Room is not available , Please check availability first")
+        return checkRoomAvailability() ;
+      } else {
+        const { data } = await axios.post("/api/bookings/book", {
+          room: room._id,
+          checkInDate: bookingData.checkIn,
+          checkOutDate: bookingData.checkOut,
+          persons: bookingData.persons,
+          paymentMethod: "Stripe",
+        });
+        // setIsAvailable(data.isAvailable);
+        if (data.success) {
+          toast.success("Room booked successfully");
+          navigate("/my-bookings");
+          scrollTo(0, 0);
+        } else {
+          toast.error(data.message);
+        }
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  }; 
+
   return (
     <div className="py-24 min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -82,12 +147,11 @@ export default function SingleRoom() {
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-centergap-6">
             <div className="flex-1">
               <h1 className="text-4xl font-bold text-gray-800">
-                {" "}
                 {room.roomType}
               </h1>
               <div className="flex items-center gap-2 text-gray-600 mb-4">
                 <MapPin className="w-5 h-5"></MapPin>
-                <span>{room.hotel.address}</span>
+                <span>{room.hotel.hotelAddress}</span>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
@@ -123,11 +187,11 @@ export default function SingleRoom() {
               <div className="text-gray-600">
                 <div className="flex item-center gap-2 ">
                   <User className="w-4 h-4 mt-1" />
-                  <span>{room.hotel.ownerName}</span>
+                  <span>{room.hotel.owner.name}</span>
                 </div>
                 <div className="flex item-center gap-2 ">
                   <Phone className="w-4 h-4 mt-1" />
-                  <span>{room.hotel.contactNumber}</span>
+                  <span>+9898985689</span>
                 </div>
               </div>
             </div>
@@ -141,7 +205,7 @@ export default function SingleRoom() {
           <div className=" lg:grid-cols-3 gap-6 grid ">
             <div className="lg:col-span-2 ">
               <img
-                src={room.images[selectedImage]}
+                src={`http://localhost:4000/images/${room.images[selectedImage]}`}
                 alt={`${room.roomType}- Image ${selectedImage + 1}`}
                 className="rounded-xl  w-full h-96 object-cover"
               />
@@ -150,7 +214,7 @@ export default function SingleRoom() {
               {room.images.map((image, index) => (
                 <img
                   key={index}
-                  src={image}
+                  src={`http://localhost:4000/images/${image}`}
                   alt={`Thumbnail ${index + 1}`}
                   className={`h-24 lg:h-20 object-cover rounded-lg cursor-pointer 
                   transition-all duration-200 ${
@@ -181,14 +245,20 @@ export default function SingleRoom() {
                 Room Amenities
               </h2>
               <div className="flex flex-wrap gap-4">
-                {room.amenities.map((amenity, index) => {
+                {(Array.isArray(room?.amenities)
+                  ? room.amenities.flat()
+                  : []
+                ).map((amenity, index) => {
                   const IconComponent = getAmenityIcon(amenity);
+
                   return (
                     <div
                       key={index}
                       className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl"
                     >
-                      <IconComponent className="w-5 h-5 text-green-600" />
+                      {IconComponent && (
+                        <IconComponent className="w-5 h-5 text-green-600" />
+                      )}
                       <span className="text-gray-700">{amenity}</span>
                     </div>
                   );
@@ -202,14 +272,20 @@ export default function SingleRoom() {
                 Hotel Amenities
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {room.hotel.amenities.map((amenity, index) => {
+                {(Array.isArray(room?.hotel?.amenities)
+                  ? room.hotel.amenities.flat()
+                  : []
+                ).map((amenity, index) => {
                   const IconComponent = getAmenityIcon(amenity);
+
                   return (
                     <div
                       key={index}
                       className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl"
                     >
-                      <IconComponent className="w-5 h-5 text-green-600" />
+                      {IconComponent && (
+                        <IconComponent className="w-5 h-5 text-green-600" />
+                      )}
                       <span className="text-gray-700">{amenity}</span>
                     </div>
                   );
@@ -225,7 +301,7 @@ export default function SingleRoom() {
               <h2 className="text-2xl font-bold text-gray-600 mb-6">
                 Book This Room
               </h2>
-              <div className="space-y-4">
+              <form onSubmit={onSubmitHandler} className="space-y-4">
                 <div>
                   <label
                     htmlFor=""
@@ -236,10 +312,11 @@ export default function SingleRoom() {
                   </label>
                   <input
                     type="date"
-                    name=""
-                    id=""
-                    value={checkIn}
-                    onChange={(e) => setCheckIn(e.target.value)}
+                    name="checkIn"
+                    id="checkIn"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={bookingData.checkIn}
+                    onChange={onChangeHandler}
                     className="w-full px-4 py-3 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -253,28 +330,29 @@ export default function SingleRoom() {
                   </label>
                   <input
                     type="date"
-                    name=""
-                    id=""
-                    value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
+                    name="checkOut"
+                    id="checkOut"
+                    min={bookingData.checkIn}
+                    value={bookingData.checkOut}
+                    onChange={onChangeHandler}
                     className="w-full px-4 py-3 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 {/* Guests */}
                 <div>
                   <label
-                    htmlFor="guests"
+                    htmlFor="persons"
                     className="block text-sm font-bold text-gray-700 mb-2"
                   >
                     <User className="w-4 h-4 inline mr-2" />
-                    Number of Guests
+                    Number of Persons
                   </label>
                   <input
                     type="number"
-                    name="guests"
-                    id="guests"
-                    onChange={(e) => setPersons(e.target.value)}
-                    value={persons}
+                    name="persons"
+                    
+                    value={bookingData.persons}
+                    onChange={onChangeHandler}
                     className="w-full px-4 py-3 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -287,15 +365,16 @@ export default function SingleRoom() {
                     </span>
                   </div>
                 </div>
-                <button 
-                type="button"
-                onClick={handleBooking}
-                disabled={!room.isAvailable}
-                className={`w-full py-3 rounded-lg font-semibold text-white transition-all duration-200 ${room.isAvailable ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}`}
-                >   
-                   {room.isAvailable ? "Check Availability" : "Sold Out"}
+                <button
+                  type="submit"
+                  className={`w-full py-3 rounded-lg font-semibold text-white transition-all duration-200 
+                    bg-green-600 hover:bg-green-700                   `}
+                >
+                  {isAvailable ? "Book Now" : "Check Avaialbility"}
+                  {/* {checkRoomAvailability} */}
+                  {/* {console.log("isAvailable:", isAvailable)} */}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </div>

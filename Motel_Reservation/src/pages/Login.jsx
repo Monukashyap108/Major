@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 import { AppContext } from "../content/AppContext";
 import toast from "react-hot-toast";
 export default function Login() {
-     const {setUser,Navigate,setOwner} = useContext(AppContext);  
-    const [formdata , setFormData] = useState({
+     const {setUser,navigate,setOwner,axios} = useContext(AppContext);  
+    const [formdata , setFormdata] = useState({
     email:"",
     password:""
   })  
  const onChangeHandler = (e) =>{
-  setFormData({
+  setFormdata({
     ...formdata,
     [e.target.name]: e.target.value
   })
@@ -17,10 +17,30 @@ export default function Login() {
   const submitHandler = async(e) =>{
     e.preventDefault();
     // setUser(true)  at 4.35
-    setOwner(true)
-    toast.success("Login Successfully");
-     navigate("/owner")
-    console.log(formdata);
+     try{
+         const {data} = await axios.post("/api/user/login",formdata)
+
+         if(data.success){
+         toast.success(data.message);
+         if(data.user.role==="owner"){
+          setOwner(true);
+          navigate("/owner")
+         }
+         else{
+          setUser(true);
+          navigate("/")
+         }
+        }
+         else
+         {
+          toast.error(data.message)
+           
+         }
+        
+     }
+     catch(error){
+        toast.error(error.response.data.message)
+     }
    
   }
   return (

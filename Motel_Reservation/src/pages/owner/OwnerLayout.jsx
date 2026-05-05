@@ -15,18 +15,29 @@ export default function OwnerLayout() {
     );
 
      
-       const {owner,setOwner}=useContext(AppContext)
+       const {owner,setOwner,navigate,axios}=useContext(AppContext)
     const sidebarLinks = [
         { name: "Dashboard", path: "/owner", icon: dashboardicon },
-        { name: "Rooms", path: "/owner/rooms", icon: <Warehouse/> },
+        { name: "Rooms", path: "/owner/all-rooms", icon: <Warehouse/> },
         { name: "Bookings", path: "/owner/bookings", icon: <CalendarArrowDown/> },
     ];
 
     const logout = async()=>{
-      setOwner(false)
-      toast.success("Logout Successfully")
-       
+        
+   try{
+    const {data} = await axios.get("/api/user/logout")
+    if(data.success){
+        toast.success(data.message);
+        setOwner(false);
+        navigate("/")
     }
+   }catch(error){
+
+    toast.error(error.response.data.message)
+   }
+   }
+       
+    
   return (
     <>
     

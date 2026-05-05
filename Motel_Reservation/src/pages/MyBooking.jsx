@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { bookingData } from "../assets/assets";
 import {
   MapPin,
@@ -13,8 +13,31 @@ import {
   User,
   Home,
 } from "lucide-react";
-
+import { AppContext } from "../content/AppContext";
+import toast from "react-hot-toast";
+import { useEffect,useState } from "react";  
 export default function MyBooking() {
+const {axios} = useContext(AppContext)
+
+const [bookingData, setBookingData] = useState([])
+
+const fetchBookings = async()=>{
+  try{
+    const {data} = await axios.get("/api/bookings/user")
+    console.log(data)
+    if(data.success){
+        setBookingData(data.bookings);
+      }else{
+        toast.error(data.message);
+      }
+  }catch(error){
+toast.error(error.message)
+  }
+}
+ useEffect(()=>{
+fetchBookings();
+},[])
+
   const getStatusColor = (status) => {
     switch (status) {
       case "Confirmed":
@@ -57,6 +80,7 @@ export default function MyBooking() {
         return <Clock />;
     }
   };
+  console.log("Booking",bookingData)
   return (
     <div className="min-h-screen bg-gray-50  py-10">
       <div className="max-w-7xl mx-auto px-4">
@@ -99,28 +123,28 @@ export default function MyBooking() {
                     <div className="col-span-1 md:col-span-4 ">
                       <div className="flex gap-4">
                         <img
-                          src={booking.room.images[0]}
-                          alt={booking.room.roomType}
+                          src= {`http://localhost:4000/images/${booking.room.images[0]}`}
+                          alt={booking.room?.roomType}
                           className="w-20 h-16 md:w-24 md:h-29 rounded-lg object-cover flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-800 text-lg mb-1">
-                            {booking.hotel.name}
+                            {booking.hotel?.hotelName}
                           </h3>
                           <p className="text-blue-600 font-medium mb-1">
-                            {booking.room.roomType}
+                            {booking.room?.roomType}
                           </p>
                           <div className="flex items-center gap-1 text-gray-500 text-semibold mb-1">
                             <MapPin className="w-3 h-3" />
                             <span className="truncate">
-                              {booking.hotel.address}
+                              {booking.hotel?.hotelAddress}
                             </span>
                           </div>
                           <div className="flex items-center gap-1 text-gray-500 text-semibold">
                             <User className="h-3 w-3" />
                             <span>
-                              {booking.guest}guest
-                              {booking.guest > 1 ? "s" : ""}
+                              {booking.persons} guest
+                              {booking.persons > 1 ? "s" : ""}
                             </span>
                           </div>
                         </div>
@@ -134,7 +158,7 @@ export default function MyBooking() {
                           <div>
                             <p className="text-sm text-gray-800">Check-In</p>
                             <p className="font-medium text-gray-400">
-                              {new Date(booking.checkInDate).toLocaleDateString(
+                              {new Date(booking.checkIn).toLocaleDateString(
                                 "en-Us",
                                 {
                                   weekday: "short",
@@ -154,7 +178,7 @@ export default function MyBooking() {
                               <p className="text-sm text-gray-800">Check-Out</p>
                               <p className="font-medium text-gray-400">
                                 {new Date(
-                                  booking.checkOutDate,
+                                  booking.checkOut
                                 ).toLocaleDateString("en-Us", {
                                   weekday: "short",
                                   month: "short",
@@ -176,7 +200,7 @@ export default function MyBooking() {
                           </span>
                         </div>
                         <p className="font-bold text-lg text-gray-800">
-                          {booking.totalPrice}
+                          ₹ {booking.totalPrice}
                         </p>
                         <div
                           className={`inline-flex items-center gap-2 px-2 py-1 rounded- text-xs font-medium${
@@ -185,7 +209,7 @@ export default function MyBooking() {
                               : "bg-red-100 text-red-700"
                           }`}
                         >
-                          {booking.isPaid ? "Paid" : "UnPaid"}
+                        <p>{booking.isPaid ? "Paid" : "UnPaid"}</p>
                         </div>
                       </div>
                     </div>
@@ -207,16 +231,16 @@ export default function MyBooking() {
                   {/* Actions */}
                   <div className="col-span-1 md:col-span-1">
                     <div className="flex   gap-2">
-                      {booking.status !== "canclled" && (
+                      {/* {booking.status !== "canclled" && (
                         <button
                           onClick={""}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-4   text-red-600 hover:bg-red-50 rounded-lg transition-colors hover:cursor-pointer"
                           title=" cancle Booking"
                         >
-                          <Trash2 className="w-3 h-3 " /> 
+                          <Trash2 className="w-4 h-4 " /> 
                           
                         </button>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>

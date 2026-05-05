@@ -1,13 +1,46 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "../../content/AppContext";
 import { useNavigate } from "react-router-dom";
 import { MapPin } from "lucide-react";
-import {Star} from "lucide-react";
+import { Star } from "lucide-react";
 import RegisteredHotel from "./RegisteredHotel";
+import toast from "react-hot-toast";
 
 export default function AllHotels() {
   const navigate = useNavigate();
-  const { hotelData } = useContext(AppContext);
+  const { axios } = useContext(AppContext);
+  const [hotelData, setHotelData] = useState([]);
+
+  const fetchOwnerHotels = async () => {
+    try {
+      const { data } = await axios.get("/api/hotel/get");
+      if (data.success) {
+        setHotelData(data.hotels || []);
+      } else {
+        toast.error("failed to fetch hotel data");
+      }
+    } catch (error) {
+      // toast.error("failed to fetch hotel data");
+      toast.error("failed to fetch hotel data");
+    }
+  };
+  useEffect(() => {
+    fetchOwnerHotels();
+  }, []);
+  const deleteHotel = async (id) => {
+    try {
+      const { data } = await axios.delete(`/api/hotel/delete/${id}`);
+      if (data.success) {
+        toast.success(data.message);
+        fetchOwnerHotels();
+        console.log(data);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
   return (
     <div className="min-h-screen bg:gradient-to-b from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto ">
@@ -40,9 +73,12 @@ export default function AllHotels() {
                   <th className="px-6 py-5 text-left text-sm font-semibold uppercase tracking-winder">
                     Hotel
                   </th>
-                   
+
                   <th className="px-6 py-5 text-left text-sm font-semibold uppercase tracking-winder">
-                    Address
+                    Location
+                  </th>
+                  <th className="px-6 py-5 text-left text-sm font-semibold uppercase tracking-winder">
+                    Hotel Owner
                   </th>
                   <th className="px-6 py-5 text-left text-sm font-semibold uppercase tracking-winder">
                     Contact
@@ -51,10 +87,10 @@ export default function AllHotels() {
                     Rating
                   </th>
                   <th className="px-6 py-5 text-left text-sm font-semibold uppercase tracking-winder">
-                    Price/Night
+                    Price
                   </th>
                   <th className="px-6 py-5 text-left text-sm font-semibold uppercase tracking-winder">
-                    Amenties
+                    Amenities
                   </th>
                   <th className="px-6 py-5 text-left text-sm font-semibold uppercase tracking-winder">
                     Action
@@ -62,9 +98,9 @@ export default function AllHotels() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {hotelData.map((hotel, index) => (
+                {hotelData?.map((hotel, index) => (
                   <tr
-                    key={hotel.id}
+                    key={hotel._id}
                     className={`hover:bg-blue-50 transition-all duration-200 ${
                       index % 2 === 0 ? " bg-white" : "bg-gray-50"
                     }`}
@@ -73,26 +109,25 @@ export default function AllHotels() {
                       <div className="flex items-center space-x-4">
                         <div className="relative">
                           <img
-                            src={hotel.image}
-                            alt={hotel.name}
+                            src={`http://localhost:4000/images/${hotel.image}`}
+                            alt={hotel.hotelName}
                             className="w-20 h-16 rounded-xl object-cover shadow-md"
                           />
                           <div className="absolute inset-0 bg-black/30 hover:bg-black/60 transition-all duration-200  "></div>
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800 hover:text-blue-600 transition-colors">
-                            {hotel.name}
+                            {hotel.hotelName}
                           </h3>
                         </div>
                       </div>
                     </td>
 
-                   
                     <td className="px-6 py-6">
                       <div className="flex items-starts space-x-2">
                         <MapPin className='w-4 h-4 text-gray-400 mt-1 flex-shrink-0"' />
                         <span className="text-gray-600 text-sm leading-relaxed">
-                          {hotel.address}
+                          {hotel.hotelAddress}
                         </span>
                       </div>
                     </td>
@@ -100,42 +135,52 @@ export default function AllHotels() {
                     <td className="px-6 py-6">
                       <div className="flex items-starts space-x-2">
                         <span className="text-gray-600 text-sm leading-relaxed">
-                          {hotel.contactNumber}
+                          {hotel.owner.name}
                         </span>
                       </div>
                     </td>
-                   
-                   <td className="px-6 py-6">
+
+                    <td className="px-6 py-6">
                       <div className="flex items-starts space-x-2">
-                        <Star className="w-4 h-4 text-yellow-500 flex-shrink-0 fill-current"/>
-                          <span className="text-gray-600 text-sm leading-relative">
-                             {hotel.rating}
-                          </span>
-                         
-                         
+                        <span className="text-gray-600 text-sm leading-relaxed">
+                          7966132132164
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-6">
+                      <div className="flex items-starts space-x-2">
+                        <Star className="w-4 h-4 text-yellow-500 flex-shrink-0 fill-current" />
+                        <span className="text-gray-600 text-sm leading-relative">
+                          {hotel.rating}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-6">
-                       
-                        <span className="text-green-600 text-2xl  leading-relaxed">
-                          {hotel.price}
-                        </span>
-                       
+                      <span className="text-green-600 text-2xl  leading-relaxed">
+                        ₹{hotel.price}
+                      </span>
                     </td>
-                      <td className="px-6 py-6">
-                      <div  className="flex flex-wrap gap-1">
-                      {
-                        hotel.amenities.slice(0,4).map((item,index)=>(
-                           <span key={index} className=" bg-blue-100 text-blue-700 px-2 py-1 rounded-lg   ">
-                             {item}
-                           </span>
-                        ))
-                      }
+                    <td className="px-6 py-6">
+                      <div className="flex flex-wrap gap-1">
+                        {hotel.amenities?.flat()?.map((item, index) => (
+                          <span
+                            key={index}
+                            className=" bg-blue-100 text-blue-700 px-2 py-1 rounded-lg   "
+                          >
+                            {item}
+                          </span>
+                        ))}
                       </div>
                     </td>
-                     <td>
-                      <button className="bg-red-500 text-white px-4 py-1 rounded-full cursor-pointer">Delete</button>
-                     </td>
+                    <td>
+                      <button
+                        onClick={() => deleteHotel(hotel._id)}
+                        className="bg-red-500 text-white px-4 py-1 rounded-full cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

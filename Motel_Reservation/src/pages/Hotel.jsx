@@ -19,13 +19,13 @@ export default function Hotel() {
 
                       <img 
                       className='size-70 object-cover object-top'
-                      src={item.image} alt="" />
+                      src={`http://localhost:4000/images/${item.image}`} alt="" />
                       <div className='absolute inset-0 flex flex-col justify-end p-4 text-white
                        bg-black/50 opacity-0 transition-all duration-300 group-hover:opacity-100
             '> 
-                <h1 className='text-lg font-medium'>{item.name}</h1>
-                <p className='text-sm'>{item.address}</p>
-                <h1 className='text-lg font-medium'>{item.price}</h1>
+                <h1 className='text-lg font-medium'>{item.hotelName}</h1>
+                <p className='text-sm'>{item.hotelAddress}</p>
+                <h1 className='text-lg font-medium'>${item.price}</h1>
                       </div>
                       </motion.div>
                 ))
